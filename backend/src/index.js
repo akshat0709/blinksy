@@ -1,12 +1,39 @@
 
-import express from "express"
-import "dotenv/config"
+import express from "express";
+import cors from "cors";
+import { clerkMiddleware } from "@clerk/express";
+import "dotenv/config";
+import { connectorDB } from "./lib/db.js";
 
-const app = express()
+const app = express();
 
-const PORT = process.env.PORT
- 
+const PORT = process.env.PORT || 3000;
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
-app.listen(PORT,() => console.log("server is up in and running on port ", PORT));
+app.use(express.json());
 
+app.use(cors({
+    origin: FRONTEND_URL,
+    credentials: true
+}));
 
+app.use(clerkMiddleware());
+
+app.get("/health", (req, res) => {
+    res.status(200).json({ ok: true });
+});
+
+async function startServer() {
+    try {
+        await connectorDB();
+
+        app.listen(PORT, () => {
+            console.log("Server is up and running on port", PORT);
+        });
+    } catch (error) {
+        console.error("Failed to start server:", error.message);
+        process.exit(1);
+    }
+}
+
+startServer();
